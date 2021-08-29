@@ -1,5 +1,5 @@
 CFLAGS = -Wall -g
-EXE = msh
+EXE = ../msh
 SOURCE = mentat.c
 CC = gcc
 DEPS = 
