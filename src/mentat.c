@@ -1,9 +1,10 @@
 #define BUFSIZE 1024
+#define TOKENSIZE 64
 
 #include <stdio.h>
 #include <stdlib.h>
 
-void
+char
 *msh_readline(void)
 {
     int c;
@@ -26,6 +27,11 @@ void
         position++;
     }
     
+}
+
+char
+**msh_splitline(char *line)
+{
 }
 
 int
