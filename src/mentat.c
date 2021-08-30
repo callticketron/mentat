@@ -30,9 +30,7 @@ char
 }
 
 char
-**msh_splitline(char *line)
-{
-}
+**msh_splitline(char *line);
 
 int
 main(int argc, char *argv[])

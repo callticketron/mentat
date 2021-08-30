@@ -10,4 +10,4 @@ mentat: $(DEPS)
 	cd src && $(CC) $(CFLAGS) $(SOURCE) -o $(EXE) $(DEPS)
 
 clean:
-	rm -rf a.out msh *.o
+	rm -rf src/*.o msh
