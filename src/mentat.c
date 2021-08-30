@@ -12,6 +12,7 @@ char
 *msh_readline(void)
 {
     int c;
+    int bufsize = BUFSIZE;
     int position = 0;
     char *buffer = malloc(sizeof(char) * BUFSIZE);
 
@@ -23,15 +24,26 @@ char
     while(1) {
         c = getchar();
 
-        if (c == EOF || c == '\n') {
+        if (c == '\n') {
             buffer[position] = '\0';
             return buffer;
+        } else if (c == EOF) {
+            exit(EXIT_SUCCESS);
         } else {
             buffer[position] = c;
         }
+
         position++;
+
+        if (position >= bufsize) {
+            bufsize += BUFSIZE;
+            buffer = realloc(buffer, bufsize);
+            if (!buffer) {
+                fprintf(stderr, "msh allocation error\n");
+                exit(EXIT_FAILURE);
+            }
+        }
     }
-    
 }
 
 char
@@ -95,11 +107,39 @@ msh_launch(char **command)
 }
 
 int
+msh_execute(char **command)
+{
+    int i;
+
+    if (command[0] == NULL) {
+        //Was empty
+        return 1;
+    }
+
+    return msh_launch(command);
+}
+
+void msh_loop(void)
+{
+    char *line;
+    char **command;
+    int status;
+
+    do {
+        printf("msh> ");
+        line = msh_readline();
+        command = msh_splitline(line);
+        status = msh_execute(command);
+
+        free(line);
+        free(command);
+
+    } while (status);
+}
+
+int
 main(int argc, char *argv[])
 {
-    char *line = msh_readline();
-    char **command = msh_splitline(line);
-    free(line);
-    free(command);
+    msh_loop();
     return 0;
 }

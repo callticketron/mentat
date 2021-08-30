@@ -4,6 +4,7 @@ SOURCE = mentat.c
 CC = gcc
 DEPS = 
 
+
 all: clean mentat
 
 mentat: $(DEPS)
