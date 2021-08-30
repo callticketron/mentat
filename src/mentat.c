@@ -74,7 +74,6 @@ main(int argc, char *argv[])
 {
     char *line = msh_readline();
     char **command = msh_splitline(line);
-    execvp(command[0], command);
     free(line);
     free(command);
     return 0;
