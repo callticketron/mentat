@@ -1,145 +1,53 @@
-#define BUFSIZE 1024
-#define TOKENSIZE 64
-#define DELIMITERS " \t\n\r\a"
-
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <unistd.h>
-#include <string.h>
-#include <sys/wait.h>
+#include <fcntl.h>
+#include <termios.h>
+#include <string.h> // needed for memset
 
-char
-*msh_readline(void)
-{
-    int c;
-    int bufsize = BUFSIZE;
-    int position = 0;
-    char *buffer = malloc(sizeof(char) * BUFSIZE);
-
-    if (!buffer) {
-        fprintf(stderr, "msh allocation error\n");
-        exit(EXIT_FAILURE);
-    }
-
-    while(1) {
-        c = getchar();
-
-        if (c == '\n') {
-            buffer[position] = '\0';
-            return buffer;
-        } else if (c == EOF) {
-            exit(EXIT_SUCCESS);
-        } else {
-            buffer[position] = c;
-        }
-
-        position++;
-
-        if (position >= bufsize) {
-            bufsize += BUFSIZE;
-            buffer = realloc(buffer, bufsize);
-            if (!buffer) {
-                fprintf(stderr, "msh allocation error\n");
-                exit(EXIT_FAILURE);
-            }
-        }
-    }
-}
-
-char
-**msh_splitline(char *line)
-{
-    int bufsize, position;
-    char *token;
-    char **tokens = malloc(TOKENSIZE * sizeof(char *));
-
-    bufsize = TOKENSIZE;
-    position = 0;
-
-    if (!tokens) {
-        fprintf(stderr, "msh allocation error\n");
-        exit(EXIT_FAILURE);
-    }
-
-    token = strtok(line, DELIMITERS);
-    while (token != NULL) {
-        tokens[position] = token;
-        position++;
-
-        if (position >= bufsize) {
-            bufsize += TOKENSIZE;
-            tokens = realloc(tokens, bufsize * sizeof(char *));
-            if (!tokens) {
-                fprintf(stderr, "msh allocation error\n");
-                exit(EXIT_FAILURE);
-            }
-        }
-
-        token = strtok(NULL, DELIMITERS);
-    }
-
-    tokens[position] = NULL;
-    return tokens;
-}
-
-int
-msh_launch(char **command)
-{
-    pid_t pid, wpid;
-    int status;
-
-    pid = fork();
-    if (pid == 0) {
-        // Child process
-        if (execvp(command[0], command) == -1) {
-            perror("msh");
-        }
-        exit(EXIT_FAILURE);
-    } else if (pid < 0) {
-        // Error forking
-        perror("msh");
-    } else {
-        do {
-            wpid = waitpid(pid, &status, WUNTRACED);
-        } while (!WIFEXITED(status) && !WIFSIGNALED(status));
-    }
-    return -1;
-}
-
-int
-msh_execute(char **command)
-{
-    int i;
-
-    if (command[0] == NULL) {
-        //Was empty
-        return 1;
-    }
-
-    return msh_launch(command);
-}
-
-void msh_loop(void)
-{
-    char *line;
-    char **command;
-    int status;
-
-    do {
-        printf("msh> ");
-        line = msh_readline();
-        command = msh_splitline(line);
-        status = msh_execute(command);
-
-        free(line);
-        free(command);
-
-    } while (status);
-}
 
 int
 main(int argc, char *argv[])
 {
-    msh_loop();
-    return 0;
+	struct termios tio;
+	struct termios stdio;
+	int tty_fd;
+	fd_set rdset;
+
+	unsigned char c='D';
+
+	printf("Please start with %s /dev/ttyS1 (for example)\n",argv[0]);
+	memset(&stdio,0,sizeof(stdio));
+	stdio.c_iflag=0;
+	stdio.c_oflag=0;
+	stdio.c_cflag=0;
+	stdio.c_lflag=0;
+	stdio.c_cc[VMIN]=1;
+	stdio.c_cc[VTIME]=0;
+	tcsetattr(STDOUT_FILENO,TCSANOW,&stdio);
+	tcsetattr(STDOUT_FILENO,TCSAFLUSH,&stdio);
+	fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);       // make the reads non-blocking
+
+	memset(&tio,0,sizeof(tio));
+	tio.c_iflag=0;
+	tio.c_oflag=0;
+	tio.c_cflag=CS8|CREAD|CLOCAL;           // 8n1, see termios.h for more information
+	tio.c_lflag=0;
+	tio.c_cc[VMIN]=1;
+	tio.c_cc[VTIME]=5;
+
+	tty_fd=open(argv[1], O_RDWR | O_NONBLOCK);        // O_NONBLOCK might override VMIN and VTIME, so read() may return immediately.
+	cfsetospeed(&tio,B115200);            // 115200 baud
+	cfsetispeed(&tio,B115200);            // 115200 baud
+
+	tcsetattr(tty_fd,TCSANOW,&tio);
+	while (c != 'q') {
+		if (read(tty_fd,&c,1)>0)
+            write(STDOUT_FILENO,&c,1);              // if new data is available on the serial port, print it out
+		if (read(STDIN_FILENO,&c,1)>0)
+            write(tty_fd,&c,1);                     // if new data is available on the console, send it to the serial port
+	}
+
+	close(tty_fd);
+	return 0;
 }
