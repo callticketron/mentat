@@ -2,13 +2,16 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 int
 main(int argc, char *argv[])
 {
     char *command[] = {"/usr/bin/bash", "", "\0"};
     pid_t pid;
+    int c;
     pid = fork();
+
 
     if (pid == 0) {
         printf("I am the child pid %d and my parent is %d\n", getpid(), getppid());
