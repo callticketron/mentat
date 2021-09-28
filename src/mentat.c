@@ -2,20 +2,20 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <termios.h>
+#include <pty.h>
+#include <utmp.h>
 #include <string.h>  // needed for memset
 
 
 int
 main(int argc, char *argv[])
 {
-	struct termios tio;
-	struct termios stdio;
-	int tty_fd;
+    int *main;
+    char name[256];
     pid_t pid;
 
-    tty_fd = posix_openpt();
+    pid = forkpty(main, name, NULL, NULL);
 
-	close(tty_fd);
+	close(*main);
 	return 0;
 }
