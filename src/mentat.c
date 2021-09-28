@@ -1,21 +1,22 @@
-#include <stdlib.h>
+#define _XOPEN_SOURCE 600
 #include <stdio.h>
-#include <unistd.h>
 #include <fcntl.h>
-#include <pty.h>
-#include <utmp.h>
-#include <string.h>  // needed for memset
-
+#include <stdlib.h>
+#include <unistd.h>
 
 int
 main(int argc, char *argv[])
 {
-    int *main;
-    char name[256];
-    pid_t pid;
+    int master;
+    char *slavename;
 
-    pid = forkpty(main, name, NULL, NULL);
+    master = posix_openpt(O_RDWR);
+    grantpt(master);
+    unlockpt(master);
+    slavename = ptsname(master);
 
-	close(*main);
+    printf("%s\n", slavename);
+
+    close(master);
 	return 0;
 }
